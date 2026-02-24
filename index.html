@@ -325,7 +325,7 @@ tg.ready();
 tg.expand();
 
 // ── Конфиг ───────────────────────────────────────────────────────────────────
-const API_URL = 'https://bba0-94-103-2-190.ngrok-free.app';
+const API_URL = window.CLICK_API_URL || 'https://your-server.com';
 
 // ── Состояние (будет загружено из /me) ───────────────────────────────────────
 let balance    = 0;
@@ -333,17 +333,13 @@ let clickPower = 1;
 let energy     = 500;
 let MAX_ENERGY = 500;
 let ownerName  = null;   // имя владельца из БД
-let sessionEarnedЖ = 0;   // заработано за сессию (для отображения)
+let sessionEarned = 0;   // заработано за сессию (для отображения)
 
 // ── Загрузка данных из БД при старте ────────────────────────────────────────
 async function loadUserData() {
   try {
     const resp = await fetch(API_URL + '/me', {
-      headers: {
-      'X-Init-Data': tg.initData || '',
-      'ngrok-skip-browser-warning': 'true'
-  }
-
+      headers: { 'X-Init-Data': tg.initData || '', 'ngrok-skip-browser-warning': 'true' }
     });
     const data = await resp.json();
     if (data.ok) {
@@ -390,10 +386,11 @@ function formatNum(n) {
 }
 
 // ── Константы ────────────────────────────────────────────────────────────────
-const CLICK_COOLDOWN_MS = 100;  // пауза 0.1 сек между кликами
-const AUTO_SAVE_EVERY   = 100;  // тихое сохранение каждые 100 кликов (без закрытия)
+const CLICK_COOLDOWN_MS = 100;
+const AUTO_SAVE_EVERY   = 100;
 
-// ── Состояние ────────────────────────────────────────────────────────────────
+// ── Состояние кликов ─────────────────────────────────────────────────────────
+let sessionClicks = 0;   // клики с последнего сохранения
 let lastClickTime = 0;
 let isCooldown    = false;
 
@@ -460,14 +457,10 @@ async function saveClicksSilent() {
 
   try {
     const resp = await fetch(API_URL + '/click', {
-    method:  'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Init-Data':  tg.initData || '',
-      'ngrok-skip-browser-warning': 'true'
-    },
-    body: JSON.stringify({ clicks: toSave })
-  });
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg.initData || '', 'ngrok-skip-browser-warning': 'true' },
+      body:    JSON.stringify({ clicks: toSave })
+    });
     const data = await resp.json();
     if (data.balance !== undefined) {
       balance    = data.balance;      // ← реальный баланс из БД
