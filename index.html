@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>WorkChain Clicker</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+  :root {
+    --gold: #FFD700;
+    --gold2: #FFA500;
+    --dark: #0a0a0f;
+    --dark2: #13131f;
+    --dark3: #1a1a2e;
+    --accent: #00ffcc;
+    --red: #ff4466;
+    --glow: 0 0 20px rgba(255,215,0,0.5);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--dark);
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px 28px;
+    background: 
+      radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(0,255,204,0.04) 0%, transparent 60%),
+      var(--dark);
+  }
+
+  /* Top bar */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: var(--dark3);
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 14px;
+    padding: 10px 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.4), transparent);
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow: var(--glow);
+    margin-top: 2px;
+  }
+  .stat-value.small { font-size: 13px; }
+
+  /* Energy bar */
+  .energy-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .energy-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .energy-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .energy-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #00aaff);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px rgba(0,255,204,0.5);
+  }
+
+  /* Main click area */
+  .click-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .coin-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .coin-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,215,0,0.12);
+    animation: ring-pulse 3s ease-in-out infinite;
+  }
+  .coin-ring:nth-child(1) { width: 240px; height: 240px; animation-delay: 0s; }
+  .coin-ring:nth-child(2) { width: 280px; height: 280px; animation-delay: 0.5s; opacity: 0.6; }
+  .coin-ring:nth-child(3) { width: 320px; height: 320px; animation-delay: 1s; opacity: 0.3; }
+
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.03); opacity: 0.6; }
+  }
+
+  .coin-btn {
+    position: relative;
+    z-index: 2;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    border: none;
+    background: radial-gradient(circle at 35% 35%, #ffe066, #e6a800, #8a5c00);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+      0 0 40px rgba(255,215,0,0.3),
+      0 0 80px rgba(255,165,0,0.1),
+      inset 0 -6px 20px rgba(0,0,0,0.3),
+      inset 0 4px 12px rgba(255,255,255,0.2);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    -webkit-touch-callout: none;
+  }
+
+  .coin-btn:active, .coin-btn.tapped {
+    transform: scale(0.93);
+    box-shadow:
+      0 0 20px rgba(255,215,0,0.5),
+      0 0 40px rgba(255,165,0,0.2),
+      inset 0 -3px 10px rgba(0,0,0,0.4),
+      inset 0 2px 6px rgba(255,255,255,0.15);
+  }
+
+  .coin-inner {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: rgba(0,0,0,0.35);
+    text-shadow: 0 2px 4px rgba(255,255,255,0.15);
+    pointer-events: none;
+    letter-spacing: -2px;
+  }
+
+  /* Floating numbers */
+  .float-num {
+    position: fixed;
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255,215,0,0.8);
+    pointer-events: none;
+    z-index: 100;
+    animation: float-up 0.9s ease-out forwards;
+  }
+  @keyframes float-up {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-90px) scale(0.6); }
+  }
+
+  /* Bottom info */
+  .bottom-info {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+  }
+
+  .info-pill {
+    flex: 1;
+    background: var(--dark3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 8px 12px;
+    text-align: center;
+  }
+  .info-pill .label {
+    font-size: 9px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .info-pill .val {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  /* Send button */
+  .send-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    border: none;
+    border-radius: 16px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,165,0,0.35);
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
+  }
+  .send-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Owner badge */
+  .owner-badge {
+    position: absolute;
+    top: -6px; right: -6px;
+    background: var(--red);
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 12px rgba(255,68,102,0.5);
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="stat-card">
+    <div class="stat-label">Баланс</div>
+    <div class="stat-value" id="balance">0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Сессия</div>
+    <div class="stat-value small" id="session-clicks">+0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">За клик</div>
+    <div class="stat-value small" id="click-power">×1</div>
+  </div>
+</div>
+
+<div class="energy-wrap">
+  <div class="energy-header">
+    <span>⚡ Энергия</span>
+    <span id="energy-text">500 / 500</span>
+  </div>
+  <div class="energy-bar">
+    <div class="energy-fill" id="energy-fill" style="width: 100%"></div>
+  </div>
+</div>
+
+<div class="click-area">
+  <div class="coin-wrapper">
+    <div class="coin-ring"></div>
+    <div class="coin-ring"></div>
+    <div class="coin-ring"></div>
+    <button class="coin-btn" id="coinBtn" ontouchstart="handleTouch(event)" ontouchend="handleTouchEnd(event)">
+      <span class="coin-inner">₿</span>
+    </button>
+    <div class="owner-badge" id="ownerBadge" style="display:none">ЗАНЯТ</div>
+  </div>
+</div>
+
+<div class="bottom-info">
+  <div class="info-pill">
+    <div class="label">Сотрудники</div>
+    <div class="val" id="emp-count">—</div>
+  </div>
+  <div class="info-pill">
+    <div class="label">Владелец</div>
+    <div class="val" id="owner-info">Свободен</div>
+  </div>
+</div>
+
+<button class="send-btn" id="sendBtn" onclick="sendClicks()" disabled>
+  💾 Сохранить прогресс
+</button>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+// ── Конфиг ───────────────────────────────────────────────────────────────────
+const API_URL = window.CLICK_API_URL || 'https://your-server.com';
+
+// ── Состояние (будет загружено из /me) ───────────────────────────────────────
+let balance    = 0;
+let clickPower = 1;
+let energy     = 500;
+let MAX_ENERGY = 500;
+let ownerName  = null;   // имя владельца из БД
+let sessionEarned = 0;   // заработано за сессию (для отображения)
+
+// ── Загрузка данных из БД при старте ────────────────────────────────────────
+async function loadUserData() {
+  try {
+    const resp = await fetch(API_URL + '/me', {
+      headers: { 'X-Init-Data': tg.initData || '' }
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      balance    = data.balance;
+      clickPower = data.click_power || 1;
+      energy     = data.energy;
+      MAX_ENERGY = data.max_energy;
+      ownerName  = data.owner_name || null;
+      updateOwnerBadge();
+      updateUI();
+    }
+  } catch (e) {
+    console.warn('Не удалось загрузить данные:', e);
+  }
+}
+
+function updateOwnerBadge() {
+  const badge = document.getElementById('ownerBadge');
+  const ownerInfo = document.getElementById('owner-info');
+  if (ownerName) {
+    badge.style.display = 'block';
+    badge.textContent   = `👔 ${ownerName}`;
+    ownerInfo.textContent = ownerName;
+  } else {
+    badge.style.display = 'none';
+    ownerInfo.textContent = 'Свободен';
+  }
+}
+
+// Update UI
+function updateUI() {
+  document.getElementById('balance').textContent = formatNum(balance);
+  document.getElementById('session-clicks').textContent = sessionEarned > 0 ? '+' + formatNum(sessionEarned) : '+0';
+  document.getElementById('click-power').textContent = '×' + clickPower;
+  document.getElementById('energy-text').textContent = energy + ' / ' + MAX_ENERGY;
+  document.getElementById('energy-fill').style.width = (MAX_ENERGY > 0 ? energy / MAX_ENERGY * 100 : 0) + '%';
+  document.getElementById('sendBtn').disabled = sessionEarned === 0;
+}
+
+function formatNum(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return Math.floor(n);
+}
+
+// ── Константы ────────────────────────────────────────────────────────────────
+const CLICK_COOLDOWN_MS = 100;  // пауза 0.1 сек между кликами
+const AUTO_SAVE_EVERY   = 100;  // тихое сохранение каждые 100 кликов (без закрытия)
+
+// ── Состояние ────────────────────────────────────────────────────────────────
+let lastClickTime = 0;
+let isCooldown    = false;
+
+function handleClick(x, y) {
+  if (isCooldown) return;
+
+  if (energy <= 0) {
+    showFloat('NO ENERGY', x, y, '#ff4466');
+    return;
+  }
+
+  lastClickTime = Date.now();
+  isCooldown = true;
+  setTimeout(() => { isCooldown = false; }, CLICK_COOLDOWN_MS);
+
+  // Локальный декремент для мгновенного UI-отклика
+  // Реальное значение придёт от сервера при следующем сохранении
+  energy = Math.max(0, energy - 1);
+  sessionClicks++;
+
+  showFloat('+' + clickPower, x, y);
+
+  const btn = document.getElementById('coinBtn');
+  btn.classList.add('tapped');
+  setTimeout(() => btn.classList.remove('tapped'), 80);
+
+  updateUI();
+
+  if (sessionClicks % AUTO_SAVE_EVERY === 0) saveClicksSilent();
+}
+
+function handleTouch(e) {
+  e.preventDefault();
+  const touches = e.changedTouches;
+  for (let t of touches) {
+    handleClick(t.clientX, t.clientY);
+  }
+}
+
+function handleTouchEnd(e) { e.preventDefault(); }
+
+document.getElementById('coinBtn').addEventListener('click', function(e) {
+  if (!('ontouchstart' in window)) {
+    handleClick(e.clientX, e.clientY);
+  }
+});
+
+function showFloat(text, x, y, color) {
+  const el = document.createElement('div');
+  el.className = 'float-num';
+  el.textContent = text;
+  el.style.left = (x - 20) + 'px';
+  el.style.top = (y - 20) + 'px';
+  if (color) el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// ── Сохранение через fetch — энергия и баланс из ответа сервера ─────────────
+async function saveClicksSilent() {
+  if (sessionClicks === 0) return;
+  const toSave  = sessionClicks;
+  sessionClicks = 0;
+
+  try {
+    const resp = await fetch(API_URL + '/click', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg.initData || '' },
+      body:    JSON.stringify({ clicks: toSave })
+    });
+    const data = await resp.json();
+    if (data.balance !== undefined) {
+      balance    = data.balance;      // ← реальный баланс из БД
+      energy     = data.energy;       // ← реальная энергия из БД
+      MAX_ENERGY = data.max_energy;
+      sessionEarned += data.earned || toSave * clickPower;
+      showSaveToast('\u2705 +' + formatNum(data.earned || toSave * clickPower));
+    } else {
+      showSaveToast('\u26a0\ufe0f Ошибка сохранения');
+    }
+  } catch (e) {
+    showSaveToast('\u26a0\ufe0f Нет связи');
+    console.error('Save error:', e);
+  }
+  updateUI();
+}
+
+function sendClicks() {
+  saveClicksSilent();
+}
+
+function showSaveToast(msg) {
+  let toast = document.getElementById('saveToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'saveToast';
+    toast.style.cssText = [
+      'position:fixed', 'bottom:90px', 'left:50%', 'transform:translateX(-50%)',
+      'background:rgba(0,255,204,0.12)', 'border:1px solid rgba(0,255,204,0.35)',
+      'color:#00ffcc', "font-family:'Rajdhani',sans-serif", 'font-size:13px',
+      'font-weight:600', 'padding:8px 22px', 'border-radius:99px',
+      'letter-spacing:0.5px', 'z-index:999', 'pointer-events:none',
+      'transition:opacity 0.4s'
+    ].join(';');
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+}
+
+// ── Реген энергии — внизу скрипта ─────────────────────────────────────────
+
+// ── Telegram MainButton ──────────────────────────────────────────────────────
+tg.MainButton.setText('💾 СОХРАНИТЬ');
+tg.MainButton.show();
+tg.MainButton.onClick(sendClicks);
+
+// Локальный реген (+1 каждые 12 сек = 500 за ~100 мин)
+setInterval(() => {
+  if (energy < MAX_ENERGY) {
+    energy = Math.min(MAX_ENERGY, energy + 1);
+    updateUI();
+  }
+}, 12000);
+
+// Загрузить реальные данные из БД при старте
+loadUserData();
+</script>
+</body>
+</html>
