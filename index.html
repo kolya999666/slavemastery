@@ -337,6 +337,10 @@ let sessionEarned = 0;   // заработано за сессию (для от�
 
 // ── Загрузка данных из БД при старте ────────────────────────────────────────
 async function loadUserData() {
+  // Ждём пока Telegram передаст initData
+  await new Promise(r => setTimeout(r, 500));
+  console.log('initData length:', (tg.initData || '').length);
+  console.log('initData preview:', (tg.initData || '').substring(0, 50));
   try {
     const resp = await fetch(API_URL + '/me', {
       headers: { 'X-Init-Data': tg.initData || '', 'ngrok-skip-browser-warning': 'true' }
